@@ -15,9 +15,10 @@ module TASlock : LOCK = struct
   let create () = Atomic.make false
 
   let rec acquire t =
-    if not @@ Atomic.compare_and_set t false true then (
+    if not @@ Atomic.compare_and_set t false true then begin
       Domain.cpu_relax ();
-      acquire t)
+      acquire t
+    end
 
   let release t = Atomic.set t false
 end
@@ -28,12 +29,14 @@ module TTASlock : LOCK = struct
   let create () = Atomic.make false
 
   let rec acquire t =
-    if Atomic.get t then (
+    if Atomic.get t then begin
       Domain.cpu_relax ();
-      acquire t)
-    else if not (Atomic.compare_and_set t false true) then (
+      acquire t
+    end
+    else if not (Atomic.compare_and_set t false true) then begin
       Domain.cpu_relax ();
-      acquire t)
+      acquire t
+    end
 
   let release t = Atomic.set t false
 end
@@ -44,9 +47,10 @@ module TTASlock_boff : LOCK = struct
   let create () = Atomic.make false
 
   let rec acquire_ ?(backoff = Backoff.default) t =
-    if Atomic.get t then (
+    if Atomic.get t then begin
       Domain.cpu_relax ();
-      acquire_ ~backoff t)
+      acquire_ ~backoff t
+    end
     else if not (Atomic.compare_and_set t false true) then
       acquire_ ~backoff:(Backoff.once backoff) t
 
